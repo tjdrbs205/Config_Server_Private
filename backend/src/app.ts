@@ -2,25 +2,25 @@ import express, { Application } from "express";
 import basicAuth from "express-basic-auth";
 import cors from "cors";
 
-import { GitRepository } from "../src/module/common/repository/repo";
-import { EnvironmentValue } from "../src/module/common/config.class";
+import { errorHandler } from "./common/middleware/error.middleware";
 
-import ConfigRouter from "./module/config/github.config/config.router";
+import { EnvironmentValue } from "./common/env";
+import configRouter from "../src/config/config.router";
+import { InMemory } from "./common/InMemory";
 
 class ConfigServer {
   private app: Application = express();
   private environmentValue: EnvironmentValue;
-  private gitRepository: GitRepository;
+  private gitRepositoryService: InMemory;
   constructor() {
     this.environmentValue = EnvironmentValue.getInstance();
-    this.gitRepository = new GitRepository();
+    this.gitRepositoryService = InMemory.getInstance();
     this.init();
     this.preMiddleware();
-    this.router();
   }
 
   async init() {
-    await this.gitRepository.cloneRepo().catch(console.error);
+    await this.gitRepositoryService.start().catch(console.error);
   }
 
   async preMiddleware() {
@@ -29,21 +29,17 @@ class ConfigServer {
     this.app.use(
       basicAuth({
         users: {
-          [process.env.ADMIN_USER || "admin"]:
-            process.env.ADMIN_PASS || "password",
+          [process.env.ADMIN_USER || "admin"]: process.env.ADMIN_PASS || "password",
         },
         challenge: true,
       })
     );
+    this.router();
+    this.app.use(errorHandler);
   }
 
   async router() {
-    this.app.use("/config", ConfigRouter);
-
-    this.app.get("/test/:path", async (req, res) => {
-      const result = await this.gitRepository.getConfigFilelist();
-      res.send(result);
-    });
+    this.app.use("/config", configRouter);
   }
 
   async start() {
