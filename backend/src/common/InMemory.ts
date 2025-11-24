@@ -6,14 +6,12 @@ import { fs } from "memfs";
 import dotenv from "dotenv";
 import YAML from "yaml";
 import PropertiesReader from "properties-reader";
-
-import { EnvironmentValue } from "./env";
+import { EnvironmentValue } from "./EnvironmentValue";
 
 export class InMemory {
   private static instance: InMemory | null = null;
 
   private environment: EnvironmentValue;
-
   private REPO_DIR = "/repo";
   private GIT_AUTH_TOKEN: string;
   private GIT_URL: string;

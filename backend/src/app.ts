@@ -4,7 +4,7 @@ import cors from "cors";
 
 import { errorHandler } from "./common/middleware/error.middleware";
 
-import { EnvironmentValue } from "./common/env";
+import { EnvironmentValue } from "./common/EnvironmentValue";
 import configRouter from "../src/config/config.router";
 import { InMemory } from "./common/InMemory";
 
@@ -15,15 +15,14 @@ class ConfigServer {
   constructor() {
     this.environmentValue = EnvironmentValue.getInstance();
     this.gitRepositoryService = InMemory.getInstance();
-    this.init();
-    this.preMiddleware();
   }
 
   async init() {
     await this.gitRepositoryService.start().catch(console.error);
+    this.preMiddleware();
   }
 
-  async preMiddleware() {
+  preMiddleware() {
     this.app.use(express.json());
     this.app.use(cors());
     this.app.use(
@@ -43,9 +42,10 @@ class ConfigServer {
   }
 
   async start() {
+    await this.init();
     const port = this.environmentValue.PORT;
     this.app.listen(port, () => {
-      console.log(`Config server is running on port ${port}`);
+      console.log(`Config Server is running on port ${port}`);
     });
   }
 }
