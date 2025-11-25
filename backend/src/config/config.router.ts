@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import Phase, { GetSecretOptions } from "@phase.dev/phase-node";
 
 import { ConfigService } from "../config/config.service";
-import { SecretReader } from "../common/SecretReader";
+import { SecretReader } from "../common/secretReader";
 dotenv.config();
 
 const phase = new SecretReader(new Phase(process.env.PHASE_API_KEY || ""));

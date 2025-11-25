@@ -4,21 +4,17 @@ import cors from "cors";
 
 import { errorHandler } from "./common/middleware/error.middleware";
 
-import { EnvironmentValue } from "./common/EnvironmentValue";
+import { EnvironmentValue } from "./common/environmentValue";
 import configRouter from "../src/config/config.router";
-import { InMemory } from "./common/InMemory";
 
 class ConfigServer {
   private app: Application = express();
   private environmentValue: EnvironmentValue;
-  private gitRepositoryService: InMemory;
   constructor() {
     this.environmentValue = EnvironmentValue.getInstance();
-    this.gitRepositoryService = InMemory.getInstance();
   }
 
   async init() {
-    await this.gitRepositoryService.start().catch(console.error);
     this.preMiddleware();
   }
 

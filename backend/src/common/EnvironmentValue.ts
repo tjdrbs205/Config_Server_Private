@@ -2,12 +2,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-enum NodeEnv {
+export enum NodeEnv {
   DEV = "development",
   PROD = "production",
   TEST = "test",
 }
-enum ModeEnv {
+export enum ModeEnv {
   INMEMORY = "inmemory",
   LOCAL = "local",
 }
@@ -28,7 +28,7 @@ export class EnvironmentValue {
   GIT_BRANCH: string = process.env.GIT_BRANCH || "main";
 
   SERVER_MODE: string = this.isNodeEnv(String(process.env.NODE_ENV)) ? (process.env.NODE_ENV as NodeEnv) : NodeEnv.DEV;
-  GITREPO_MODE: string = this.isModeEnv(String(process.env.MODE_ENV))
+  GIT_REPO_MODE: string = this.isModeEnv(String(process.env.MODE_ENV))
     ? (process.env.MODE_ENV as ModeEnv)
     : ModeEnv.INMEMORY;
 

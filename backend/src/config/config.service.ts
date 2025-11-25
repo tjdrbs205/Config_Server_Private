@@ -1,14 +1,18 @@
-import { InMemory } from "../common/InMemory";
+import { EnvironmentValue } from "../common/environmentValue";
+import { GitRepository } from "../common/gitRepo";
 
 export class ConfigService {
-  private db: InMemory;
+  private env: EnvironmentValue;
+  private gitRepo: GitRepository;
 
   constructor() {
-    this.db = InMemory.getInstance();
+    this.env = EnvironmentValue.getInstance();
+    this.gitRepo = new GitRepository(this.env.GIT_REPO_MODE);
+    this.gitRepo.start().catch(console.error);
   }
 
   async getConfigFile(application: string, profile: string) {
-    const file = await this.db.find(application, profile);
+    const file = await this.gitRepo.find(application, profile);
     return { application, profile, propertySources: file };
   }
 }
