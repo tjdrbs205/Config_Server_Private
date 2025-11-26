@@ -197,11 +197,12 @@ export class GitRepository {
    */
   private async getFilePathsByApplicationAndProfile(application: string, profile: string) {
     const get = (p: string, a: string): string[] => GitRepository.#fileIndex.get(p)?.get(a) ?? [];
+    // Generate ordered list based on priority
     const ordered = [
-      ...get(profile, application),
-      ...get("default", application),
-      ...get(profile, "application"),
       ...get("default", "application"),
+      ...get(profile, "application"),
+      ...get("default", application),
+      ...get(profile, application),
     ];
     const seen = new Set<string>();
     const depuped: string[] = [];
@@ -347,9 +348,9 @@ export class GitRepository {
    *
    * @param application
    * @param profile
-   * @returns Object
+   * @returns Record<string, unknown>
    */
-  async find(application: string, profile: string): Promise<Object> {
+  async find(application: string, profile: string): Promise<Record<string, unknown>> {
     if (!GitRepository.#isReady) throw new Error("Repository is not ready yet.");
     const source = await this.getConfigFiles({ application, profile });
     let merged: Record<string, unknown> = {};

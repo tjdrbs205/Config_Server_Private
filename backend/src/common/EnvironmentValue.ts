@@ -33,6 +33,8 @@ export class EnvironmentValue {
     : ModeEnv.INMEMORY;
 
   PHASE_API_KEY: string = process.env.PHASE_API_KEY || "";
+  PHASE_APP_ID: string = process.env.PHASE_APP_ID || "";
+  PHASE_ENV_NAME: string = process.env.PHASE_ENV_NAME || "";
 
   private isNodeEnv(env: string): env is NodeEnv {
     return Object.values(NodeEnv).includes(env as NodeEnv);

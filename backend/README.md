@@ -10,6 +10,8 @@ GIT_AUTH_TOKEN=
 GIT_URL=
 GIT_BRANCH=
 PHASE_API_KEY=
+PHASE_APP_ID=
+PHASE_ENV_NAME=
 ```
 
 ---
@@ -45,9 +47,11 @@ PHASE_API_KEY=
 
 ### 외부 Secret 저장소 사용 시
 
-| 변수            | 설명              | 지원 서비스               |
-| --------------- | ----------------- | ------------------------- |
-| `PHASE_API_KEY` | Phase API 인증 키 | Phase (현재 Phase만 지원) |
+| 변수             | 설명                          | 지원 서비스               |
+| ---------------- | ----------------------------- | ------------------------- |
+| `PHASE_API_KEY`  | Phase API 인증 키 (필수)      | Phase (현재 Phase만 지원) |
+| `PHASE_APP_ID`   | Phase Application ID (필수)   | Phase                     |
+| `PHASE_ENV_NAME` | Phase Environment 이름 (필수) | Phase                     |
 
 > **Secret 관리 기능**: Git repository의 설정 파일에서 key만 있고 value가 비어있는 경우, Phase와 같은 외부 저장소에서 실제 값을 가져와 자동으로 채워줍니다.
 
@@ -64,4 +68,6 @@ GIT_URL=https://github.com/username/repo.git
 GIT_AUTH_TOKEN=ghp_xxxxxxxxxxxx
 GIT_BRANCH=main
 PHASE_API_KEY=your_phase_api_key
+PHASE_APP_ID=your_phase_app_id
+PHASE_ENV_NAME=Development
 ```
