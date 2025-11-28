@@ -40,6 +40,12 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID}}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: ci
       - name: Deploy to rasz2
         uses: appleboy/ssh-action@v1.0.0
         with:
