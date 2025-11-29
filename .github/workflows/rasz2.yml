@@ -63,15 +63,15 @@ jobs:
             docker run -d \
               --name config-server \
               -p 3000:3000 \
-              -e PORT=${{ secrets.PORT }} \
-              -e SERVER_MODE=${{ secrets.SERVER_MODE }} \
-              -e GITREPO_MODE=${{ secrets.GITREPO_MODE }} \
+              -e PORT=${{ vars.PORT }} \
+              -e SERVER_MODE=${{ vars.SERVER_MODE }} \
+              -e GITREPO_MODE=${{ vars.GITREPO_MODE }} \
               -e GIT_AUTH_TOKEN=${{ secrets.GIT_AUTH_TOKEN }} \
-              -e GIT_URL=${{ secrets.GIT_URL }} \
-              -e GIT_BRANCH=${{ secrets.GIT_BRANCH }} \
+              -e GIT_URL=${{ vars.GIT_URL }} \
+              -e GIT_BRANCH=${{ vars.GIT_BRANCH }} \
               -e PHASE_API_KEY=${{ secrets.PHASE_API_KEY }} \
               -e PHASE_APP_ID=${{ secrets.PHASE_APP_ID }} \
-              -e PHASE_ENV_NAME=${{ secrets.PHASE_ENV_NAME }} \
+              -e PHASE_ENV_NAME=${{ vars.PHASE_ENV_NAME }} \
               --restart unless-stopped \
               --memory="256m" \
               --memory-swap="512m" \
