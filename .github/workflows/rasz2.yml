@@ -39,6 +39,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Setup Tailscale
         uses: tailscale/github-action@v2
@@ -46,6 +47,7 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID}}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
+          
       - name: Deploy to rasz2
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -54,26 +56,28 @@ jobs:
           password: ${{ secrets.PI_PASSWORD }}
           port: ${{ secrets.PI_PORT || 22 }}
           script: |
-            # 최신 이미지 pull
             docker pull ${{ secrets.DOCKER_USERNAME }}/config-server:latest
-            
-            # 기존 컨테이너 중지 및 제거
             docker stop config-server 2>/dev/null || true
             docker rm config-server 2>/dev/null || true
-            
-            # 새 컨테이너 실행
+
             docker run -d \
               --name config-server \
               -p 3000:3000 \
-              --env-file /home/pi/config-server/.env \
+              -e PORT=${{ secrets.PORT }} \
+              -e SERVER_MODE=${{ secrets.SERVER_MODE }} \
+              -e GITREPO_MODE=${{ secrets.GITREPO_MODE }} \
+              -e GIT_AUTH_TOKEN=${{ secrets.GIT_AUTH_TOKEN }} \
+              -e GIT_URL=${{ secrets.GIT_URL }} \
+              -e GIT_BRANCH=${{ secrets.GIT_BRANCH }} \
+              -e PHASE_API_KEY=${{ secrets.PHASE_API_KEY }} \
+              -e PHASE_APP_ID=${{ secrets.PHASE_APP_ID }} \
+              -e PHASE_ENV_NAME=${{ secrets.PHASE_ENV_NAME }} \
               --restart unless-stopped \
               --memory="256m" \
               --memory-swap="512m" \
               ${{ secrets.DOCKER_USERNAME }}/config-server:latest
             
-            # 오래된 이미지 정리
             docker image prune -af --filter "until=24h"
             
-            # 컨테이너 상태 확인
             docker ps | grep config-server
             echo "Deployment completed!"
