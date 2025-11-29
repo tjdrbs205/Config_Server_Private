@@ -71,3 +71,111 @@ PHASE_API_KEY=your_phase_api_key
 PHASE_APP_ID=your_phase_app_id
 PHASE_ENV_NAME=Development
 ```
+
+---
+
+## API 사용 방법
+
+### 설정 파일 조회 API
+
+Git repository에 저장된 설정 파일을 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /{application}/{profile}
+```
+
+#### 파라미터
+
+| 파라미터      | 타입   | 설명                                                           |
+| ------------- | ------ | -------------------------------------------------------------- |
+| `application` | string | 애플리케이션 이름 (Git repository 내 디렉토리 또는 파일명)     |
+| `profile`     | string | 프로파일 이름 (예: `dev`, `prod`, `local` 등 환경별 설정 구분) |
+
+#### 응답 형식
+
+```json
+{
+  "application": "애플리케이션 이름",
+  "profile": "프로파일 이름",
+  "propertySources": {
+    // 설정 파일 내용 (key-value 형태)
+  }
+}
+```
+
+#### 사용 예시
+
+**요청**
+
+```bash
+curl http://localhost:8000/my-app/dev
+```
+
+**응답**
+
+```json
+{
+  "application": "my-app",
+  "profile": "dev",
+  "propertySources": {
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "username": "dev_user",
+      "password": "secret_from_phase"
+    },
+    "redis": {
+      "host": "localhost",
+      "port": 6379
+    }
+  }
+}
+```
+
+---
+
+## Secret 자동 주입 기능
+
+설정 파일에서 값이 비어있거나 특정 키에 대한 값이 필요한 경우, Phase 외부 저장소에서 자동으로 값을 가져와 채워줍니다.
+
+### 동작 방식
+
+1. Git repository의 설정 파일을 읽어옵니다.
+2. Phase에 저장된 Secret 값들을 조회합니다.
+3. 설정 파일의 키와 일치하는 Secret이 있으면 자동으로 값을 주입합니다.
+
+### Secret 매칭 우선순위
+
+1. 전체 경로 (예: `database.password`)
+2. 전체 경로 대문자 (예: `DATABASE.PASSWORD`)
+3. 키 이름 (예: `password`)
+4. 키 이름 대문자 (예: `PASSWORD`)
+
+### 예시
+
+**Git 설정 파일 (원본)**
+
+```yaml
+database:
+  host: localhost
+  password: # 값이 비어있음
+```
+
+**Phase에 저장된 Secret**
+
+```
+database.password = "my-secret-password"
+```
+
+**API 응답 결과**
+
+```json
+{
+  "database": {
+    "host": "localhost",
+    "password": "my-secret-password"
+  }
+}
+```
