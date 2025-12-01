@@ -2,6 +2,7 @@ import Phase, { GetSecretOptions } from "@phase.dev/phase-node";
 import { EnvironmentValue } from "../common/environmentValue";
 import { GitRepository } from "../common/gitRepo";
 import { SecretReader } from "../common/secretReader";
+import { Log } from "../decorador/Logger";
 
 export class ConfigService {
   private env: EnvironmentValue;
@@ -75,6 +76,7 @@ export class ConfigService {
     return result;
   }
 
+  @Log({ prefix: "CONFIG" })
   async getConfigFile(application: string, profile: string) {
     const file = await this.gitRepo.find(application, profile);
     const filledFile = this.fillSecret(file);

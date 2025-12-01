@@ -15,7 +15,6 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "express-basic-auth": "^1.2.1",
     "isomorphic-git": "^1.33.2",
     "memfs": "^4.46.1",
     "properties-reader": "^2.3.0",

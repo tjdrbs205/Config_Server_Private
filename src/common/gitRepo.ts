@@ -10,6 +10,7 @@ import PropertiesReader from "properties-reader";
 import { EnvironmentValue, ModeEnv } from "./environmentValue";
 
 function checkFileSystemMode(mode: string): any {
+  console.log("Git Repository Mode:", mode);
   if (mode === ModeEnv.LOCAL) return fs;
   else if (mode === ModeEnv.INMEMORY) return memfs;
   else throw new Error("Invalid Git Repository Mode");

@@ -1,17 +1,17 @@
 import express, { Application } from "express";
-import basicAuth from "express-basic-auth";
 import cors from "cors";
 
 import { errorHandler } from "./common/middleware/error.middleware";
 
 import { EnvironmentValue } from "./common/environmentValue";
 import configRouter from "../src/config/config.router";
+import { apiKeyAuth } from "./common/middleware/auth.middleware";
 
 class ConfigServer {
   private app: Application = express();
-  private environmentValue: EnvironmentValue;
+  private env: EnvironmentValue;
   constructor() {
-    this.environmentValue = EnvironmentValue.getInstance();
+    this.env = EnvironmentValue.getInstance();
   }
 
   async init() {
@@ -21,14 +21,10 @@ class ConfigServer {
   preMiddleware() {
     this.app.use(express.json());
     this.app.use(cors());
-    this.app.use(
-      basicAuth({
-        users: {
-          [process.env.ADMIN_USER || "admin"]: process.env.ADMIN_PASS || "password",
-        },
-        challenge: true,
-      })
-    );
+    console.log("Server Mode:", this.env.SERVER_MODE);
+    if (this.env.SERVER_MODE === "production") {
+      this.app.use(apiKeyAuth);
+    }
     this.router();
     this.app.use(errorHandler);
   }
@@ -39,7 +35,7 @@ class ConfigServer {
 
   async start() {
     await this.init();
-    const port = this.environmentValue.PORT;
+    const port = this.env.PORT;
     this.app.listen(port, () => {
       console.log(`Config Server is running on port ${port}`);
     });

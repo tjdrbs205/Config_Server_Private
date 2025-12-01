@@ -6,12 +6,14 @@
 PORT=
 SERVER_MODE=
 GITREPO_MODE=
+GIT_REPO_DIR=
 GIT_AUTH_TOKEN=
 GIT_URL=
 GIT_BRANCH=
 PHASE_API_KEY=
 PHASE_APP_ID=
 PHASE_ENV_NAME=
+API_KEY=
 ```
 
 ---
@@ -33,6 +35,7 @@ PHASE_ENV_NAME=
 | `PORT`         | `8000`        | 서버 포트 번호                                  |
 | `SERVER_MODE`  | `development` | 서버 모드 (`development`, `production`, `test`) |
 | `GITREPO_MODE` | `inmemory`    | Git repository 모드 (`inmemory`, `local`)       |
+| `GIT_REPO_DIR` | `./repo`      | Git repository 저장 경로                        |
 | `GIT_BRANCH`   | `main`        | 사용할 Git branch                               |
 
 ---
@@ -55,6 +58,14 @@ PHASE_ENV_NAME=
 
 > **Secret 관리 기능**: Git repository의 설정 파일에서 key만 있고 value가 비어있는 경우, Phase와 같은 외부 저장소에서 실제 값을 가져와 자동으로 채워줍니다.
 
+### Production 모드 API 인증
+
+| 변수      | 설명                                         |
+| --------- | -------------------------------------------- |
+| `API_KEY` | API 인증 키 (`production` 모드에서만 사용됨) |
+
+> **참고**: `SERVER_MODE`가 `production`인 경우에만 `API_KEY` 인증이 활성화됩니다. `development` 또는 `test` 모드에서는 API_KEY 없이 접근 가능합니다.
+
 ---
 
 ## 사용 예시
@@ -70,6 +81,7 @@ GIT_BRANCH=main
 PHASE_API_KEY=your_phase_api_key
 PHASE_APP_ID=your_phase_app_id
 PHASE_ENV_NAME=Development
+API_KEY=your_api_key  # production 모드에서만 필요
 ```
 
 ---
