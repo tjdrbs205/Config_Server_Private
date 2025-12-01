@@ -8,6 +8,7 @@ import YAML from "yaml";
 import PropertiesReader from "properties-reader";
 
 import { EnvironmentValue, ModeEnv } from "./environmentValue";
+import { clear } from "console";
 
 function checkFileSystemMode(mode: string): any {
   console.log("Git Repository Mode:", mode);
@@ -19,6 +20,8 @@ function checkFileSystemMode(mode: string): any {
 export class GitRepository {
   private environment: EnvironmentValue;
   private fs: any;
+
+  private pollInterval: NodeJS.Timeout | null = null;
 
   static #fileIndex: Map<string, Map<string, string[]>> = new Map();
   static #applicationsIndex: Map<string, string[]> = new Map();
@@ -56,26 +59,88 @@ export class GitRepository {
   }
 
   private async updateRepo() {
-    await git
-      .pull({
-        fs: this.fs,
-        http,
-        dir: this.environment.GIT_REPO_DIR,
-        url: this.environment.GIT_URL,
-        ref: this.environment.GIT_BRANCH,
-        singleBranch: true,
-        onAuth: () => ({
-          username: this.environment.GIT_AUTH_TOKEN,
-        }),
-      })
-      .catch((error) => {
-        throw {
-          status: 500,
-          message: "Failed to update Git repository",
-          error: error.message,
-        };
-      });
+    await git.fetch({
+      fs: this.fs,
+      http,
+      dir: this.environment.GIT_REPO_DIR,
+      url: this.environment.GIT_URL,
+      ref: this.environment.GIT_BRANCH,
+      singleBranch: true,
+      onAuth: () => ({
+        username: this.environment.GIT_AUTH_TOKEN,
+      }),
+    });
+
+    await git.checkout({
+      fs: this.fs,
+      dir: this.environment.GIT_REPO_DIR,
+      ref: `origin/${this.environment.GIT_BRANCH}`,
+      force: true,
+    });
     console.log(`✅ [${this.constructor.name}] Updated repository to ${this.environment.GIT_REPO_DIR}`);
+  }
+
+  private async getRemoteHead(): Promise<string> {
+    const remoteRefs = await git.listServerRefs({
+      http,
+      url: this.environment.GIT_URL,
+      prefix: `refs/heads/${this.environment.GIT_BRANCH}`,
+      onAuth: () => ({
+        username: this.environment.GIT_AUTH_TOKEN,
+      }),
+    });
+    return remoteRefs[0].oid ?? "";
+  }
+
+  private async getLocalHead(): Promise<string> {
+    try {
+      const head = await git.resolveRef({
+        fs: this.fs,
+        dir: this.environment.GIT_REPO_DIR,
+        ref: this.environment.GIT_BRANCH,
+      });
+      return head;
+    } catch {
+      return "";
+    }
+  }
+
+  private async checkUpdates(): Promise<boolean> {
+    const local = await this.getLocalHead();
+    const remote = await this.getRemoteHead();
+
+    if (local !== remote) {
+      console.log(`🔄 [${this.constructor.name}] Detected updates in remote repository.`);
+      await this.updateRepo();
+      await this.initFileIndex();
+      return true;
+    }
+    console.log(`✅ [${this.constructor.name}] No updates detected.`);
+    return false;
+  }
+
+  startPolling(intervalMs: number = 60000) {
+    if (this.pollInterval) {
+      console.log(`⚠️ [${this.constructor.name}] Polling already started`);
+      return;
+    }
+
+    console.log(`⏱️ [${this.constructor.name}] Starting polling every ${intervalMs / 1000}s`);
+    this.pollInterval = setInterval(async () => {
+      try {
+        await this.checkUpdates();
+      } catch (error) {
+        console.error(`❌ [${this.constructor.name}] Error during polling:`, error);
+      }
+    }, intervalMs);
+  }
+
+  stopPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+      console.log(`🛑 [${this.constructor.name}] Stopped polling`);
+    }
   }
 
   /**
@@ -341,6 +406,7 @@ export class GitRepository {
       await this.updateRepo();
     }
     await this.initFileIndex();
+    this.startPolling(this.environment.GIT_POLL_INTERVAL);
     GitRepository.#isReady = true;
   }
 

@@ -82,4 +82,14 @@ export class ConfigService {
     const filledFile = this.fillSecret(file);
     return { application, profile, propertySources: filledFile };
   }
+
+  @Log({ prefix: "GIT_POLLING_START" })
+  startGitPolling() {
+    this.gitRepo.startPolling(this.env.GIT_POLL_INTERVAL);
+  }
+
+  @Log({ prefix: "GIT_POLLING_STOP" })
+  stopGitPolling() {
+    this.gitRepo.stopPolling();
+  }
 }

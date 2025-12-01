@@ -26,6 +26,7 @@ export class EnvironmentValue {
   GIT_AUTH_TOKEN: string = process.env.GIT_AUTH_TOKEN || "";
   GIT_URL: string = process.env.GIT_URL || "";
   GIT_BRANCH: string = process.env.GIT_BRANCH || "main";
+  GIT_POLL_INTERVAL: number = Number(process.env.GIT_POLL_INTERVAL) || 60000;
 
   SERVER_MODE: string = this.isNodeEnv(String(process.env.SERVER_MODE))
     ? (process.env.SERVER_MODE as NodeEnv)

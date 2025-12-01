@@ -69,6 +69,7 @@ jobs:
               -e GIT_AUTH_TOKEN=${{ secrets.GIT_AUTH_TOKEN }} \
               -e GIT_URL=${{ vars.GIT_URL }} \
               -e GIT_BRANCH=${{ vars.GIT_BRANCH }} \
+              -e GIT_POLL_INTERVAL=${{ vars.GIT_POLL_INTERVAL }} \
               -e PHASE_API_KEY=${{ secrets.PHASE_API_KEY }} \
               -e PHASE_APP_ID=${{ secrets.PHASE_APP_ID }} \
               -e PHASE_ENV_NAME=${{ vars.PHASE_ENV_NAME }} \
