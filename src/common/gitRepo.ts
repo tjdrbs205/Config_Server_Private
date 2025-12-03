@@ -197,64 +197,6 @@ export class GitRepository {
   }
 
   /**
-   * @param target
-   * @param source
-   *
-   * @example
-   * return {
-   * key1: 'value1',
-   *  key2: {
-   *   subKey1: 'subValue1',
-   *   subKey2: 'subValue2',
-   *  },
-   * key3: 'value3',
-   * }
-   */
-  private mergeConfigs(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
-    const isPlainObject = (v: unknown): v is Record<string, unknown> => {
-      return typeof v === "object" && v !== null && !Array.isArray(v);
-    };
-    const queue: Array<{ t: Record<string, unknown>; s: Record<string, unknown> }> = [{ t: target, s: source }];
-
-    while (queue.length > 0) {
-      const { t, s } = queue.shift()!;
-      for (const key of Object.keys(s)) {
-        const sv = s[key];
-        const tv = t[key];
-
-        if (isPlainObject(sv) && isPlainObject(tv)) {
-          queue.push({ t: tv, s: sv });
-        } else {
-          t[key] = sv;
-        }
-      }
-    }
-    return target;
-  }
-
-  /**
-   * search file paths by application
-   *
-   * @param application
-   * @return string[]
-   */
-  private async getFilePathsByApplication(application: string) {
-    const get = (a: string): string[] => GitRepository.#applicationsIndex.get(a) ?? [];
-    return [...get(application)];
-  }
-
-  /**
-   * search file paths by profile
-   *
-   * @param profile
-   * @returns string[]
-   */
-  private async getFilePathsByProfile(profile: string) {
-    const get = (p: string): string[] => GitRepository.#ProfileIndex.get(p) ?? [];
-    return [...get(profile)];
-  }
-
-  /**
    * search file paths by application and profile
    *
    * @param application
@@ -301,34 +243,6 @@ export class GitRepository {
       console.error(`Error parsing file ${filename}:`, error);
       return { error: `Failed to parse ${filename}` };
     }
-  }
-
-  /**
-   * Get configuration files based on application and/or profile
-   *
-   * @param options
-   * @returns Array<{ name: string; source: Record<string, any> }>
-   */
-  private async getConfigFiles(options: { application?: string; profile?: string }) {
-    let filePaths: string[];
-    if (options.application && options.profile) {
-      filePaths = await this.getFilePathsByApplicationAndProfile(options.application, options.profile);
-    } else if (options.application) {
-      filePaths = await this.getFilePathsByApplication(options.application);
-    } else if (options.profile) {
-      filePaths = await this.getFilePathsByProfile(options.profile);
-    } else {
-      throw new Error("At least one of application or profile must be provided.");
-    }
-
-    const fileContents = [];
-    for (const filePath of filePaths) {
-      const content = await this.fs.promises.readFile(filePath, "utf-8");
-      if (typeof content !== "string") continue;
-      const parsed = await this.parseConfig(filePath, content);
-      fileContents.push({ name: filePath, source: parsed });
-    }
-    return fileContents;
   }
 
   /**
@@ -415,17 +329,25 @@ export class GitRepository {
    *
    * @param application
    * @param profile
-   * @returns Record<string, unknown>
    */
-  async find(application: string, profile: string): Promise<Record<string, unknown>> {
+
+  async find(application: string, profile: string): Promise<Array<{ name: string; source: Record<string, any> }>> {
     if (!GitRepository.#isReady) throw new Error("Repository is not ready yet.");
-    const source = await this.getConfigFiles({ application, profile });
-    let merged: Record<string, unknown> = {};
-    for (const file of source) {
-      if (typeof file.source === "object" && file.source !== null) {
-        merged = this.mergeConfigs(merged, file.source);
-      }
+
+    const currentProfile = profile || "default";
+    const filePaths = await this.getFilePathsByApplicationAndProfile(application, currentProfile);
+    const propertySources: Array<{ name: string; source: Record<string, unknown> }> = [];
+
+    for (let i = filePaths.length - 1; i >= 0; i--) {
+      const filePath = filePaths[i];
+      const content = await this.fs.promises.readFile(filePath, "utf-8");
+      if (typeof content !== "string") continue;
+      const parsed = await this.parseConfig(filePath, content);
+      const fileName = path.posix.basename(filePath);
+
+      propertySources.push({ name: fileName, source: parsed });
     }
-    return merged;
+
+    return propertySources;
   }
 }

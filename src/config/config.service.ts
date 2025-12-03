@@ -4,6 +4,18 @@ import { GitRepository } from "../common/gitRepo";
 import { SecretReader } from "../common/secretReader";
 import { Log } from "../decorador/Logger";
 
+interface PropertySource {
+  name: string;
+  source: Record<string, unknown>;
+}
+
+interface ConfigResponse {
+  name: string;
+  profiles: string[];
+  label: string;
+  propertySources: PropertySource[];
+}
+
 export class ConfigService {
   private env: EnvironmentValue;
   private gitRepo: GitRepository;
@@ -33,7 +45,7 @@ export class ConfigService {
   /**
    * fill empty values in config with secrets
    */
-  private fillSecret(config: Record<string, unknown>) {
+  private fillSecret(config: Array<{ name: string; source: Record<string, any> }>) {
     const secret = ConfigService.#secretValue;
     // original config object is not changed
     const result = JSON.parse(JSON.stringify(config));
@@ -76,8 +88,20 @@ export class ConfigService {
     return result;
   }
 
+  private async safeFind(application: string, profile: string) {
+    try {
+      return this.gitRepo.find(application, profile);
+    } catch {
+      return null;
+    }
+  }
+
   @Log({ prefix: "CONFIG" })
   async getConfigFile(application: string, profile: string) {
+    const propertySources: PropertySource[] = [];
+
+    // 1. {app}-{profile}
+
     const file = await this.gitRepo.find(application, profile);
     const filledFile = this.fillSecret(file);
     return { application, profile, propertySources: filledFile };
