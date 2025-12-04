@@ -30,7 +30,7 @@ class ConfigServer {
   }
 
   async router() {
-    this.app.use("/config", configRouter);
+    this.app.use("/", configRouter);
   }
 
   async start() {

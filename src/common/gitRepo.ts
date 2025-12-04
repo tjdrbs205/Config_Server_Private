@@ -8,7 +8,7 @@ import YAML from "yaml";
 import PropertiesReader from "properties-reader";
 
 import { EnvironmentValue, ModeEnv } from "./environmentValue";
-import { clear } from "console";
+import { splitFilePath } from "./utils/configParser";
 
 function checkFileSystemMode(mode: string): any {
   console.log("Git Repository Mode:", mode);
@@ -92,17 +92,33 @@ export class GitRepository {
     return remoteRefs[0].oid ?? "";
   }
 
-  private async getLocalHead(): Promise<string> {
+  /**
+   * Get commit hash for a given ref
+   * @param ref - Git reference (branch name, "HEAD", tag, etc.)
+   * @returns commit hash or null if not available
+   */
+  private async getCommitHash(ref: string): Promise<string | null> {
     try {
-      const head = await git.resolveRef({
+      return await git.resolveRef({
         fs: this.fs,
         dir: this.environment.GIT_REPO_DIR,
-        ref: this.environment.GIT_BRANCH,
+        ref,
       });
-      return head;
     } catch {
-      return "";
+      return null;
     }
+  }
+
+  private async getLocalHead(): Promise<string> {
+    return (await this.getCommitHash(this.environment.GIT_BRANCH)) ?? "";
+  }
+
+  /**
+   * Get current commit hash (for Spring Cloud Config version field)
+   * @returns commit hash or null if not available
+   */
+  async getCurrentCommitHash(): Promise<string | null> {
+    return this.getCommitHash("HEAD");
   }
 
   private async checkUpdates(): Promise<boolean> {
@@ -174,26 +190,6 @@ export class GitRepository {
       }
     }
     return results;
-  }
-
-  /**
-   * @param filePath - The file path to split
-   * @return {
-   *  name,
-   *  profile,
-   *  ext
-   * }
-   */
-  private splitFilePath(filePath: string) {
-    const lastDot = filePath.lastIndexOf(".");
-    const ext = lastDot >= 0 ? filePath.slice(lastDot) : "";
-    const stem = lastDot >= 0 ? filePath.slice(0, lastDot) : filePath;
-
-    const lastDash = stem.lastIndexOf("-");
-    const name = lastDash >= 0 ? stem.slice(0, lastDash) : stem;
-    const profile = lastDash >= 0 ? stem.slice(lastDash + 1) : "default";
-
-    return { name, profile, ext };
   }
 
   /**
@@ -281,7 +277,7 @@ export class GitRepository {
 
     for (const filePath of configFiles) {
       const fileName = path.posix.basename(filePath);
-      const { name, profile, ext } = this.splitFilePath(fileName);
+      const { name, profile } = splitFilePath(fileName);
 
       // --- profile -> app -> [paths]
       if (!GitRepository.#fileIndex.has(profile)) GitRepository.#fileIndex.set(profile, new Map());
