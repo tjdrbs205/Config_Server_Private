@@ -92,11 +92,6 @@ export class GitRepository {
     return remoteRefs[0].oid ?? "";
   }
 
-  /**
-   * Get commit hash for a given ref
-   * @param ref - Git reference (branch name, "HEAD", tag, etc.)
-   * @returns commit hash or null if not available
-   */
   private async getCommitHash(ref: string): Promise<string | null> {
     try {
       return await git.resolveRef({
@@ -113,10 +108,6 @@ export class GitRepository {
     return (await this.getCommitHash(this.environment.GIT_BRANCH)) ?? "";
   }
 
-  /**
-   * Get current commit hash (for Spring Cloud Config version field)
-   * @returns commit hash or null if not available
-   */
   async getCurrentCommitHash(): Promise<string | null> {
     return this.getCommitHash("HEAD");
   }
@@ -193,21 +184,36 @@ export class GitRepository {
   }
 
   /**
-   * search file paths by application and profile
+   * Search file paths by application and profiles
    *
    * @param application
-   * @param profile
+   * @param profiles - Single profile or multiple comma-separated profiles
    * @returns string[]
    */
-  private async getFilePathsByApplicationAndProfile(application: string, profile: string) {
+  private async getFilePathsByApplicationAndProfiles(application: string, profiles: string[]) {
     const get = (p: string, a: string): string[] => GitRepository.#fileIndex.get(p)?.get(a) ?? [];
+
     // Generate ordered list based on priority
-    const ordered = [
-      ...get("default", "application"),
-      ...get(profile, "application"),
-      ...get("default", application),
-      ...get(profile, application),
-    ];
+    // Priority: application.yml < application-{profile}.yml < {app}.yml < {app}-{profile}.yml
+    // Later profiles in the list have higher priority
+    const ordered: string[] = [];
+
+    // 1. application default config
+    ordered.push(...get("default", "application"));
+
+    // 2. application-{profile} config (in order of profiles)
+    for (const profile of profiles) {
+      ordered.push(...get(profile, "application"));
+    }
+
+    // 3. {app} default config
+    ordered.push(...get("default", application));
+
+    // 4. {app}-{profile} config (in order of profiles)
+    for (const profile of profiles) {
+      ordered.push(...get(profile, application));
+    }
+
     const seen = new Set<string>();
     const depuped: string[] = [];
     for (const filePath of ordered) {
@@ -321,17 +327,24 @@ export class GitRepository {
   }
 
   /**
-   * Find and merge configuration files based on application and profile
+   * Find and merge configuration files based on application and profiles
    *
    * @param application
-   * @param profile
+   * @param profiles - Single profile string or comma-separated profiles (e.g., "dev,local")
    */
-
-  async find(application: string, profile: string): Promise<Array<{ name: string; source: Record<string, any> }>> {
+  async find(application: string, profiles: string): Promise<Array<{ name: string; source: Record<string, any> }>> {
     if (!GitRepository.#isReady) throw new Error("Repository is not ready yet.");
 
-    const currentProfile = profile || "default";
-    const filePaths = await this.getFilePathsByApplicationAndProfile(application, currentProfile);
+    // Convert comma-separated profiles to array
+    const profileList = profiles
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+
+    // Use default if profiles is empty
+    const currentProfiles = profileList.length > 0 ? profileList : ["default"];
+
+    const filePaths = await this.getFilePathsByApplicationAndProfiles(application, currentProfiles);
     const propertySources: Array<{ name: string; source: Record<string, unknown> }> = [];
 
     for (let i = filePaths.length - 1; i >= 0; i--) {

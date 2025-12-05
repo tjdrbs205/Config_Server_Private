@@ -83,21 +83,32 @@ curl http://localhost:8000/my-app/dev
 | GET    | `/config/{app}-{profile}.yml`        | YAML 형식             |
 | GET    | `/config/{app}-{profile}.properties` | Properties 형식       |
 | GET    | `/config/{app}-{profile}.json`       | JSON 형식 (중첩 객체) |
+| GET    | `/health`                            | 헬스 체크             |
+
+> **다중 Profile 지원**: `profile`에 쉼표로 구분된 여러 값을 전달할 수 있습니다.
+> 예: `/config/my-app/dev,local,secret`
 
 ### 응답 예시
 
 ```json
 {
   "name": "my-app",
-  "profiles": ["dev"],
+  "profiles": ["dev", "local"],
   "label": "main",
   "version": "abc123...",
   "state": null,
   "propertySources": [
     {
-      "name": "file:https://github.com/repo/my-app-dev.yml",
+      "name": "file:https://github.com/repo/my-app-local.yml",
       "source": {
         "database.host": "localhost",
+        "database.port": 5432
+      }
+    },
+    {
+      "name": "file:https://github.com/repo/my-app-dev.yml",
+      "source": {
+        "database.host": "dev-server",
         "database.port": 5432
       }
     }
@@ -170,7 +181,7 @@ database.password = "my-secret-password"
 
 ## 문서
 
-- [클라이언트 가이드](./docs/CLIENT_GUIDE.md) - Spring Boot, Node.js, cURL 사용법
+- [클라이언트 가이드](https://github.com/tjdrbs205/Config_Client_Private/blob/main/README.md) - Spring Boot, Node.js, cURL 사용법
 
 ---
 

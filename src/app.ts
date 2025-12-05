@@ -21,6 +21,15 @@ class ConfigServer {
   preMiddleware() {
     this.app.use(express.json());
     this.app.use(cors());
+
+    // Health check
+    this.app.get("/actuator/health", (req, res) => {
+      res.json({
+        status: "UP",
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     console.log("Server Mode:", this.env.SERVER_MODE);
     if (this.env.SERVER_MODE === "production") {
       this.app.use(apiKeyAuth);
