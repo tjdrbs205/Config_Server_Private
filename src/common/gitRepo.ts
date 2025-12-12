@@ -105,7 +105,7 @@ export class GitRepository {
   }
 
   private async getLocalHead(): Promise<string> {
-    return (await this.getCommitHash(this.environment.GIT_BRANCH)) ?? "";
+    return (await this.getCommitHash("HEAD")) ?? "";
   }
 
   async getCurrentCommitHash(): Promise<string | null> {
