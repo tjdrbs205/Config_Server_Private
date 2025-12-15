@@ -23,26 +23,55 @@ export class ConfigService {
   private env: EnvironmentValue;
   private gitRepo: GitRepository;
 
+  private secretsLastLoadedAtMs: number = 0;
+  private secretsLoading: Promise<void> | null = null;
+
   static #secretValue: Record<string, string> = {};
 
   constructor() {
     this.env = EnvironmentValue.getInstance();
     this.gitRepo = new GitRepository(this.env.GIT_REPO_MODE);
     this.gitRepo.start().catch(console.error);
-    this.loadSecrets();
+    void this.refreshSecrets();
+  }
+
+  async refreshSecrets(): Promise<{ status: "OK" | "IN_PROGRESS" | "SKIPPED"; loadedAt: string | null }> {
+    if (this.secretsLoading) {
+      return {
+        status: "IN_PROGRESS",
+        loadedAt: this.secretsLastLoadedAtMs ? new Date(this.secretsLastLoadedAtMs).toISOString() : null,
+      };
+    }
+
+    this.secretsLoading = this.loadSecrets().finally(() => {
+      this.secretsLoading = null;
+    });
+
+    await this.secretsLoading;
+    return {
+      status: "OK",
+      loadedAt: this.secretsLastLoadedAtMs ? new Date(this.secretsLastLoadedAtMs).toISOString() : null,
+    };
   }
 
   private async loadSecrets() {
-    if (!this.env.PHASE_API_KEY && this.env.PHASE_API_KEY.trim() === "") return;
+    if (!this.env.PHASE_API_KEY || this.env.PHASE_API_KEY.trim() === "") return;
 
     const options: GetSecretOptions = {
       appId: this.env.PHASE_APP_ID,
       envName: this.env.PHASE_ENV_NAME,
       path: "/",
     };
-    const secret = new SecretReader(new Phase(this.env.PHASE_API_KEY));
-    const value = await secret.get(options);
-    ConfigService.#secretValue = value;
+
+    try {
+      const secret = new SecretReader(new Phase(this.env.PHASE_API_KEY));
+      const value = await secret.get(options);
+      ConfigService.#secretValue = value;
+      this.secretsLastLoadedAtMs = Date.now();
+    } catch (error) {
+      // Keep previous secrets on transient failure
+      console.error("[ConfigService] Failed to load secrets:", error);
+    }
   }
 
   /**

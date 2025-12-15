@@ -5,6 +5,18 @@ import { parseApplicationProfile } from "../common/utils/configParser";
 
 const configRouter = Router();
 const configService = new ConfigService();
+
+/**
+ * POST /actuator/secrets/refresh
+ * Refresh secrets from Phase on-demand
+ */
+configRouter.post("/actuator/secrets/refresh", async (req: Request, res: Response) => {
+  const result = await configService.refreshSecrets();
+  res.json({
+    status: result.status,
+    loadedAt: result.loadedAt,
+  });
+});
 /**
  * GET /{application}/{profile}
  */
